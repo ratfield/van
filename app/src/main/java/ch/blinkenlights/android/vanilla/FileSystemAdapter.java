@@ -243,90 +243,29 @@ public class FileSystemAdapter
 	@Override
 	public View getView(int pos, View convertView, ViewGroup parent)
 	{
-    DraggableRow row;
-    ViewHolder holder;
-    if (convertView == null) {
-        row = (DraggableRow)mInflater.inflate(R.layout.draggable_row, parent, false);
-        row.setupLayout(DraggableRow.LAYOUT_LISTVIEW);
-        holder = new ViewHolder();
-        row.setTag(holder);
-    } else {
-        row = (DraggableRow)convertView;
-        holder = (ViewHolder)row.getTag();
-    }
-    
-    final File file = mFiles[pos];
-    final String title = file.getName();
-    holder.id = pos;
-    holder.title = title;
-    row.setText(title);
-    row.getCoverView().setImageResource(getImageResourceForFile(file));
+		DraggableRow row;
+		ViewHolder holder;
 
-    if (file.isDirectory() && !pointsToParentFolder(file)) {
-        long totalDurationMs = MediaUtils.getFolderDuration(mActivity, file.getAbsolutePath());
-        if (totalDurationMs > 0) {
-            int secs = (int)(totalDurationMs / 1000);
-            String durationStr = android.text.format.DateUtils.formatElapsedTime(secs);
-            row.setSubText(durationStr);
-        } else {
-            row.setSubText(null);
-        }
-    } else {
-        row.setSubText(null);
-    }
+		if (convertView == null) {
+			row = (DraggableRow)mInflater.inflate(R.layout.draggable_row, parent, false);
+			row.setupLayout(DraggableRow.LAYOUT_LISTVIEW);
 
-    return row;
+			holder = new ViewHolder();
+			row.setTag(holder);
+		} else {
+			row = (DraggableRow)convertView;
+			holder = (ViewHolder)row.getTag();
+		}
+
+		final File file = mFiles[pos];
+		final String title = file.getName();
+
+		holder.id = pos;
+		holder.title = title;
+		row.setText(title);
+		row.getCoverView().setImageResource(getImageResourceForFile(file));
+		return row;
 	}
-    
-    final File file = mFiles[pos];
-    final String title = file.getName();
-    holder.id = pos;
-    holder.title = title;
-    row.setText(title);
-    row.getCoverView().setImageResource(getImageResourceForFile(file));
-
-    if (file.isDirectory() && !pointsToParentFolder(file)) {
-        long totalDurationMs = MediaUtils.getFolderDuration(mActivity, file.getAbsolutePath());
-        if (totalDurationMs > 0) {
-            int secs = (int)(totalDurationMs / 1000);
-            String durationStr = android.text.format.DateUtils.formatElapsedTime(secs);
-            row.setSubText(durationStr);
-        } else {
-            row.setSubText(null);
-        }
-    } else {
-        row.setSubText(null);
-    }
-
-    return row;
-}
-    
-    final File file = mFiles[pos];
-    final String title = file.getName();
-    holder.id = pos;
-    holder.title = title;
-    row.setText(title);
-    row.getCoverView().setImageResource(getImageResourceForFile(file));
-
-    // --- НАЧАЛО НАШЕЙ МОДИФИКАЦИИ ---
-    if (file.isDirectory() && !pointsToParentFolder(file)) {
-        // Запрашиваем общее время всех треков в этой папке из медиатеки
-        long totalDurationMs = MediaUtils.getFolderDuration(mActivity, file.getAbsolutePath());
-        if (totalDurationMs > 0) {
-            // Форматируем миллисекунды в строку вида "ММ:СС" или "Ч:ММ:СС"
-            String durationStr = MediaUtils.formatDuration(mActivity, totalDurationMs);
-            row.setDescription(durationStr);
-        } else {
-            row.setDescription(null); // Если папка пустая или треки еще не просканированы
-        }
-    } else {
-        // Если это файл или папка ".." (вверх на уровень)
-        row.setDescription(null);
-    }
-    // --- КОНЕЦ НАШЕЙ МОДИФИКАЦИИ ---
-
-    return row;
-}
 
 	@Override
 	public void setFilter(String filter)
