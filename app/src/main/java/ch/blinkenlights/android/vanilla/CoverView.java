@@ -226,16 +226,38 @@ public final class CoverView extends View implements Handler.Callback {
 	 * Returns a correctly sized cover bitmap for given song
 	 */
 	private Bitmap generateBitmap(Song song) {
-		int style = mCoverStyle;
-		Bitmap cover = song == null ? null : song.getLargeCover(mContext);
+	int style = mCoverStyle;
+	Bitmap cover = song == null ? null : song.getLargeCover(mContext);
 
-		if (cover == null && style != CoverBitmap.STYLE_OVERLAPPING_BOX) {
-			cover = CoverBitmap.generateDefaultCover(mContext, getWidth(), getHeight());
+	// --- НАЧАЛО ЛОГИКИ СКАНИРОВАНИЯ JPG В ПАПКЕ ---
+	if (cover == null && song != null && song.path != null) {
+		try {
+			java.io.File audioFile = new java.io.File(song.path);
+			java.io.File folder = audioFile.getParentFile();
+			if (folder != null && folder.isDirectory()) {
+				java.io.File[] files = folder.listFiles();
+				if (files != null) {
+					for (java.io.File file : files) {
+						if (!file.isDirectory() && file.getName().toLowerCase().endsWith(".jpg")) {
+							cover = android.graphics.BitmapFactory.decodeFile(file.getAbsolutePath());
+							if (cover != null) {
+								break; // Нашли первый JPG, загрузили и выходим
+							}
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			Log.e("VanillaMusic", "Ошибка поиска JPG в папке", e);
 		}
-
-		return CoverBitmap.createBitmap(mContext, style, cover, song, getWidth(), getHeight());
 	}
+	// --- КОНЕЦ ЛОГИКИ СКАНИРОВАНИЯ ---
 
+	if (cover == null && style != CoverBitmap.STYLE_OVERLAPPING_BOX) {
+		cover = CoverBitmap.generateDefaultCover(mContext, getWidth(), getHeight());
+	}
+	return CoverBitmap.createBitmap(mContext, style, cover, song, getWidth(), getHeight());
+}
 
 	private final static int MSG_QUERY_SONGS = 1;
 	private final static int MSG_SHIFT_SONG = 2;
