@@ -17,7 +17,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@main
 
-    - name: Set up JDK 8
+    - name: Set up JDK 11
       uses: actions/setup-java@main
       with:
         java-version: '11'
@@ -29,3 +29,9 @@ jobs:
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: vanilla-music-custom-apk
+        path: app/build/outputs/apk/debug/*.apk
