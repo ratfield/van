@@ -28,6 +28,7 @@ import android.util.Base64;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import java.net.InetAddress;
 
