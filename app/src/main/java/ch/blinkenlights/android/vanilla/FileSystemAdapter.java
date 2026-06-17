@@ -262,6 +262,29 @@ public View getView(int pos, View convertView, ViewGroup parent)
     row.setText(title);
     row.getCoverView().setImageResource(getImageResourceForFile(file));
 
+    if (file.isDirectory() && !pointsToParentFolder(file)) {
+        long totalDurationMs = MediaUtils.getFolderDuration(mActivity, file.getAbsolutePath());
+        if (totalDurationMs > 0) {
+            int secs = (int)(totalDurationMs / 1000);
+            String durationStr = android.text.format.DateUtils.formatElapsedTime(secs);
+            row.setSubText(durationStr);
+        } else {
+            row.setSubText(null);
+        }
+    } else {
+        row.setSubText(null);
+    }
+
+    return row;
+}
+    
+    final File file = mFiles[pos];
+    final String title = file.getName();
+    holder.id = pos;
+    holder.title = title;
+    row.setText(title);
+    row.getCoverView().setImageResource(getImageResourceForFile(file));
+
     // --- НАЧАЛО НАШЕЙ МОДИФИКАЦИИ ---
     if (file.isDirectory() && !pointsToParentFolder(file)) {
         // Запрашиваем общее время всех треков в этой папке из медиатеки
