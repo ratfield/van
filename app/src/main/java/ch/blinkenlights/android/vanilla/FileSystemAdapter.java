@@ -241,31 +241,46 @@ public class FileSystemAdapter
 	}
 
 	@Override
-	public View getView(int pos, View convertView, ViewGroup parent)
-	{
-		DraggableRow row;
-		ViewHolder holder;
+public View getView(int pos, View convertView, ViewGroup parent)
+{
+    DraggableRow row;
+    ViewHolder holder;
+    if (convertView == null) {
+        row = (DraggableRow)mInflater.inflate(R.layout.draggable_row, parent, false);
+        row.setupLayout(DraggableRow.LAYOUT_LISTVIEW);
+        holder = new ViewHolder();
+        row.setTag(holder);
+    } else {
+        row = (DraggableRow)convertView;
+        holder = (ViewHolder)row.getTag();
+    }
+    
+    final File file = mFiles[pos];
+    final String title = file.getName();
+    holder.id = pos;
+    holder.title = title;
+    row.setText(title);
+    row.getCoverView().setImageResource(getImageResourceForFile(file));
 
-		if (convertView == null) {
-			row = (DraggableRow)mInflater.inflate(R.layout.draggable_row, parent, false);
-			row.setupLayout(DraggableRow.LAYOUT_LISTVIEW);
+    // --- НАЧАЛО НАШЕЙ МОДИФИКАЦИИ ---
+    if (file.isDirectory() && !pointsToParentFolder(file)) {
+        // Запрашиваем общее время всех треков в этой папке из медиатеки
+        long totalDurationMs = MediaUtils.getFolderDuration(mActivity, file.getAbsolutePath());
+        if (totalDurationMs > 0) {
+            // Форматируем миллисекунды в строку вида "ММ:СС" или "Ч:ММ:СС"
+            String durationStr = MediaUtils.formatDuration(mActivity, totalDurationMs);
+            row.setDescription(durationStr);
+        } else {
+            row.setDescription(null); // Если папка пустая или треки еще не просканированы
+        }
+    } else {
+        // Если это файл или папка ".." (вверх на уровень)
+        row.setDescription(null);
+    }
+    // --- КОНЕЦ НАШЕЙ МОДИФИКАЦИИ ---
 
-			holder = new ViewHolder();
-			row.setTag(holder);
-		} else {
-			row = (DraggableRow)convertView;
-			holder = (ViewHolder)row.getTag();
-		}
-
-		final File file = mFiles[pos];
-		final String title = file.getName();
-
-		holder.id = pos;
-		holder.title = title;
-		row.setText(title);
-		row.getCoverView().setImageResource(getImageResourceForFile(file));
-		return row;
-	}
+    return row;
+}
 
 	@Override
 	public void setFilter(String filter)
