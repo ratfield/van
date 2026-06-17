@@ -28,7 +28,6 @@ import ch.blinkenlights.android.medialibrary.MediaMetadataExtractor;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -111,12 +110,6 @@ public class MediaUtils {
 	 * The default sort order for files. Simply use the path
 	 */
 	private static final String FILE_SORT = "path";
-
-	/**
-	 * The number of files that are added when "play all" selects
-	 * files from the file-system.
-	 */
-	private static final int MAX_QUEUED_FILES = 500;
 
 	/**
 	 * Cached random instance.
@@ -545,77 +538,12 @@ public class MediaUtils {
 	}
 
 	/**
- * Вычисляет общую длительность (в миллисекундах) всех аудиофайлов,
- * находящихся в указанной папке, выполняя быстрый запрос к медиатеке.
- */
-public static long getFolderDuration(Context context, String folderPath) {
-    long totalDuration = 0;
-    if (folderPath == null) return totalDuration;
-
-    // Гарантируем, что путь папки заканчивается на слэш для корректного SQL-запроса LIKE
-    if (!folderPath.endsWith("/")) {
-        folderPath = folderPath + "/";
-    }
-
-    // Запрашиваем только поле длительности из базы данных Android MediaStore
-    String[] projection = new String[] { android.provider.MediaStore.Audio.Media.DURATION };
-    
-    // Выбираем файлы, чей путь начинается с пути нашей папки, но не уходит в подпапки deep-level
-    // (Если вам нужен учет ВСЕХ подпапок внутри, замените второй '%' на '_%')
-    String selection = android.provider.MediaStore.Audio.Media.DATA + " LIKE ? AND " +
-                       android.provider.MediaStore.Audio.Media.DATA + " NOT LIKE ?";
-    String[] selectionArgs = new String[] { folderPath + "%", folderPath + "%/%" };
-
-    android.database.Cursor cursor = null;
-    try {
-        cursor = context.getContentResolver().query(
-            android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            null
-        );
-
-        if (cursor != null && cursor.moveToFirst()) {
-            int durationColumn = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Audio.Media.DURATION);
-            do {
-                totalDuration += cursor.getLong(durationColumn);
-            } while (cursor.moveToNext());
-        }
-    } catch (Exception e) {
-        android.util.Log.e("VanillaMusic", "Ошибка подсчета времени папки: " + e.getMessage());
-    } finally {
-        if (cursor != null) {
-            cursor.close();
-        }
-    }
-
-    return totalDuration;
-}
-
-	/**
-	 * Returns a (possibly empty) Cursor for given file path.
-	 *
-	 * For directories, it recursively adds all files contained
-	 * in this directory.
-	 *
+	 * Returns a (possibly empty) Cursor for given file path
 	 * @param path The path to the file to be queried
 	 * @return A new Cursor object
 	 * */
 	public static Cursor getCursorForFileQuery(String path) {
 		MatrixCursor matrixCursor = new MatrixCursor(Song.FILLED_PROJECTION);
-
-		File directory = new File(path);
-		if (directory.isDirectory()) {
-			addDirectoryToCursor(directory, matrixCursor);
-		} else {
-			addFileToCursor(path, matrixCursor);
-		}
-
-		return matrixCursor;
-	}
-
-	private static void addFileToCursor(String path, MatrixCursor matrixCursor) {
 		MediaMetadataExtractor tags = new MediaMetadataExtractor(path);
 		String title = tags.getFirst(MediaMetadataExtractor.TITLE);
 		String album = tags.getFirst(MediaMetadataExtractor.ALBUM);
@@ -646,31 +574,8 @@ public static long getFolderDuration(Context context, String folderPath) {
 
 			matrixCursor.addRow(objData);
 		}
-	}
 
-	private static void addDirectoryToCursor(File directory, MatrixCursor matrixCursor) {
-		File[] files = directory.listFiles();
-		if (files == null) {
-			return;
-		}
-
-		// make sure items are returned in sorted order by the cursor
-		Arrays.sort(files);
-
-		for (File file : files) {
-			// don't add more files endlessly, but stop after
-			// the given maximum number of entries
-			if (matrixCursor.getCount() >= MAX_QUEUED_FILES) {
-				break;
-			}
-
-			if (file.isDirectory()) {
-				// recurse into this sub-directory
-				addDirectoryToCursor(file, matrixCursor);
-			} else {
-				addFileToCursor(file.getAbsolutePath(), matrixCursor);
-			}
-		}
+		return matrixCursor;
 	}
 
 	/**
