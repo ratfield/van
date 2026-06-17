@@ -545,6 +545,55 @@ public class MediaUtils {
 	}
 
 	/**
+ * Вычисляет общую длительность (в миллисекундах) всех аудиофайлов,
+ * находящихся в указанной папке, выполняя быстрый запрос к медиатеке.
+ */
+public static long getFolderDuration(Context context, String folderPath) {
+    long totalDuration = 0;
+    if (folderPath == null) return totalDuration;
+
+    // Гарантируем, что путь папки заканчивается на слэш для корректного SQL-запроса LIKE
+    if (!folderPath.endsWith("/")) {
+        folderPath = folderPath + "/";
+    }
+
+    // Запрашиваем только поле длительности из базы данных Android MediaStore
+    String[] projection = new String[] { android.provider.MediaStore.Audio.Media.DURATION };
+    
+    // Выбираем файлы, чей путь начинается с пути нашей папки, но не уходит в подпапки deep-level
+    // (Если вам нужен учет ВСЕХ подпапок внутри, замените второй '%' на '_%')
+    String selection = android.provider.MediaStore.Audio.Media.DATA + " LIKE ? AND " +
+                       android.provider.MediaStore.Audio.Media.DATA + " NOT LIKE ?";
+    String[] selectionArgs = new String[] { folderPath + "%", folderPath + "%/%" };
+
+    android.database.Cursor cursor = null;
+    try {
+        cursor = context.getContentResolver().query(
+            android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            null
+        );
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int durationColumn = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Audio.Media.DURATION);
+            do {
+                totalDuration += cursor.getLong(durationColumn);
+            } while (cursor.moveToNext());
+        }
+    } catch (Exception e) {
+        android.util.Log.e("VanillaMusic", "Ошибка подсчета времени папки: " + e.getMessage());
+    } finally {
+        if (cursor != null) {
+            cursor.close();
+        }
+    }
+
+    return totalDuration;
+}
+
+	/**
 	 * Returns a (possibly empty) Cursor for given file path.
 	 *
 	 * For directories, it recursively adds all files contained
