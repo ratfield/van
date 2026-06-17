@@ -56,6 +56,9 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 	/**
 	 * Current song duration in milliseconds.
 	 */
+	private SeekBar mFolderSeekBar;
+	private TextView mFolderElapsedView;
+	private TextView mFolderDurationView;
 	private long mDuration;
 	/**
 	 * True if user tracks/drags the seek bar
@@ -86,6 +89,13 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 		mSeekBar.setMax(1000);
 		mSeekBar.setOnSeekBarChangeListener(this);
 		setDuration(0);
+		mFolderSeekBar = (SeekBar)findViewById(R.id.folder_seek_bar);
+		mFolderElapsedView = (TextView)findViewById(R.id.folder_elapsed);
+		mFolderDurationView = (TextView)findViewById(R.id.folder_duration);
+		if (mFolderSeekBar != null) {
+		mFolderSeekBar.setMax(1000);
+	}
+
 	}
 
 	@Override
@@ -255,22 +265,70 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 	 * Update seek bar progress and schedule another update in one second
 	 */
 	private void updateElapsedTime() {
-		long position = PlaybackService.hasInstance() ? PlaybackService.get(this).getPosition() : 0;
+	if (!PlaybackService.hasInstance()) return;
+	PlaybackService service = PlaybackService.get(this);
+	long position = service.getPosition();
 
-		if (!mSeekBarTracking) {
-			long duration = mDuration;
-			mSeekBar.setProgress(duration == 0 ? 0 : (int)(1000 * position / duration));
-		}
-
-		mElapsedView.setText(DateUtils.formatElapsedTime(mTimeBuilder, position / 1000));
-
-		if (!mPaused && (mState & PlaybackService.FLAG_PLAYING) != 0) {
-			// Try to update right after the duration increases by one second
-			long next = 1050 - position % 1000;
-			mUiHandler.removeMessages(MSG_UPDATE_PROGRESS);
-			mUiHandler.sendEmptyMessageDelayed(MSG_UPDATE_PROGRESS, next);
-		}
+	if (!mSeekBarTracking) {
+		long duration = mDuration;
+		mSeekBar.setProgress(duration == 0 ? 0 : (int)(1000 * position / duration));
 	}
+	mElapsedView.setText(DateUtils.formatElapsedTime(mTimeBuilder, position / 1000));
+
+	// --- НАЧАЛО ЛОГИКИ СЧЕТЧИКА ПАПКИ ---
+	try {
+		int currentQueuePos = service.getTimelinePosition();
+		long totalFolderDuration = 0;
+		long completedFolderDuration = 0;
+
+		// Пробегаем по всей текущей очереди воспроизведения
+		for (int i = 0; ; i++) {
+			Song song = service.getSongByQueuePosition(i);
+			if (song == null) break; // Конец очереди
+
+			totalFolderDuration += song.duration;
+			if (i < currentQueuePos) {
+				completedFolderDuration += song.duration;
+			}
+		}
+
+		if (totalFolderDuration > 0) {
+			long globalElapsed = completedFolderDuration + position;
+			long globalRemaining = totalFolderDuration - globalElapsed;
+			if (globalRemaining < 0) globalRemaining = 0;
+
+			// Обновляем ползунок папки
+			if (mFolderSeekBar != null) {
+				mFolderSeekBar.setProgress((int)(1000 * globalElapsed / totalFolderDuration));
+			}
+
+			// Форматируем время изолированно, чтобы StringBuilder не затирался
+			StringBuilder sb1 = new StringBuilder();
+			StringBuilder sb2 = new StringBuilder();
+			StringBuilder sb3 = new StringBuilder();
+			String elapsedStr = DateUtils.formatElapsedTime(sb1, globalElapsed / 1000);
+			String totalStr = DateUtils.formatElapsedTime(sb2, totalFolderDuration / 1000);
+			String remainingStr = DateUtils.formatElapsedTime(sb3, globalRemaining / 1000);
+
+			// Выводим текст на экран
+			if (mFolderElapsedView != null) {
+				mFolderElapsedView.setText("Прослушано " + elapsedStr + " из " + totalStr);
+			}
+			if (mFolderDurationView != null) {
+				mFolderDurationView.setText("Осталось " + remainingStr);
+			}
+		}
+	} catch (Exception e) {
+		Log.e("VanillaMusic", "Ошибка подсчета времени папки", e);
+	}
+	// --- КОНЕЦ ЛОГИКИ СЧЕТЧИКА ПАПКИ ---
+
+	if (!mPaused && (mState & PlaybackService.FLAG_PLAYING) != 0) {
+		long next = 1050 - position % 1000;
+		mUiHandler.removeMessages(MSG_UPDATE_PROGRESS);
+		mUiHandler.sendEmptyMessageDelayed(MSG_UPDATE_PROGRESS, next);
+	}
+}
 
 	@Override
 	public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
