@@ -241,8 +241,8 @@ public class FileSystemAdapter
 	}
 
 	@Override
-public View getView(int pos, View convertView, ViewGroup parent)
-{
+	public View getView(int pos, View convertView, ViewGroup parent)
+	{
     DraggableRow row;
     ViewHolder holder;
     if (convertView == null) {
@@ -254,6 +254,29 @@ public View getView(int pos, View convertView, ViewGroup parent)
         row = (DraggableRow)convertView;
         holder = (ViewHolder)row.getTag();
     }
+    
+    final File file = mFiles[pos];
+    final String title = file.getName();
+    holder.id = pos;
+    holder.title = title;
+    row.setText(title);
+    row.getCoverView().setImageResource(getImageResourceForFile(file));
+
+    if (file.isDirectory() && !pointsToParentFolder(file)) {
+        long totalDurationMs = MediaUtils.getFolderDuration(mActivity, file.getAbsolutePath());
+        if (totalDurationMs > 0) {
+            int secs = (int)(totalDurationMs / 1000);
+            String durationStr = android.text.format.DateUtils.formatElapsedTime(secs);
+            row.setSubText(durationStr);
+        } else {
+            row.setSubText(null);
+        }
+    } else {
+        row.setSubText(null);
+    }
+
+    return row;
+	}
     
     final File file = mFiles[pos];
     final String title = file.getName();
