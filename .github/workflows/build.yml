@@ -3,7 +3,10 @@ name: Build Vanilla Music APK
 on:
   push:
     branches: [ master, main ]
-  workflow_dispatch: # Позволяет запускать сборку вручную кнопкой
+  workflow_dispatch:
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true # Отключает предупреждение GitHub
 
 jobs:
   build:
@@ -13,10 +16,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up JDK 8
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '8' # Понизили версию Java для совместимости со старым Gradle
         distribution: 'temurin'
         cache: gradle
 
@@ -25,9 +28,3 @@ jobs:
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: vanilla-music-custom-apk
-        path: app/build/outputs/apk/debug/*.apk
