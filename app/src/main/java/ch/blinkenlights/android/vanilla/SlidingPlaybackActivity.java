@@ -276,7 +276,7 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 	}
 	mElapsedView.setText(DateUtils.formatElapsedTime(mTimeBuilder, position / 1000));
 
-		// --- НАЧАЛО ЛОГИКИ СЧЕТЧИКА ПАПКИ ---
+			// --- НАЧАЛО ЛОГИКИ СЧЕТЧИКА ПАПКИ ---
 	try {
 		int currentQueuePos = service.getTimelinePosition();
 		long totalFolderDuration = 0;
@@ -313,7 +313,7 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 			String totalStr = DateUtils.formatElapsedTime(sb2, totalFolderDuration / 1000);
 			String remainingStr = DateUtils.formatElapsedTime(sb3, globalRemaining / 1000);
 
-			// Минималистичный формат: "4/11 | 00:00 / 00:00"
+			// Минималистичный формат: "4/11  |  00:00 / 00:00"
 			int displayTrackNum = currentQueuePos + 1;
 			String folderProgressInfo = displayTrackNum + "/" + totalTracks + "  |  " + elapsedStr + " / " + totalStr;
 
