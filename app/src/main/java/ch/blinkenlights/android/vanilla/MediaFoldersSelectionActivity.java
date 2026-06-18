@@ -38,11 +38,37 @@ public class MediaFoldersSelectionActivity extends FolderPickerActivity {
 		MediaLibrary.Preferences prefs = MediaLibrary.getPreferences(this);
 		File startPath = FileUtils.getFilesystemBrowseStart(this);
 
-		// Setup UI and enable tritastic options.
-		enableTritasticSelect(true, prefs.mediaFolders, prefs.blacklistedFolders);
-		enableTritasticSpinner(true);
-		// ...and jump to the folder.
-		setCurrentDir(startPath);
+				// Фильтруем списки, полностью стирая системный мусор
+		ArrayList<String> cleanIncluded = new ArrayList<>();
+		if (prefs.mediaFolders != null) {
+			for (String path : prefs.mediaFolders) {
+				String lowPath = path.toLowerCase();
+				if (!lowPath.equals("/storage/emulated/0") && !lowPath.equals("/storage/emulated/0/") && 
+					!lowPath.endsWith("/storage") && !lowPath.contains("/android") && 
+					!lowPath.contains("/alarms") && !lowPath.contains("/notifications") && 
+					!lowPath.contains("/ringtones") && !lowPath.contains("/telegram") && 
+					!lowPath.contains("/whatsapp") && !lowPath.contains("/download")) {
+					cleanIncluded.add(path);
+				}
+			}
+		}
+
+		ArrayList<String> cleanExcluded = new ArrayList<>();
+		if (prefs.blacklistedFolders != null) {
+			for (String path : prefs.blacklistedFolders) {
+				String lowPath = path.toLowerCase();
+				if (!lowPath.equals("/storage/emulated/0") && !lowPath.equals("/storage/emulated/0/") && 
+					!lowPath.endsWith("/storage") && !lowPath.contains("/android") && 
+					!lowPath.contains("/alarms") && !lowPath.contains("/notifications") && 
+					!lowPath.contains("/ringtones") && !lowPath.contains("/telegram") && 
+					!lowPath.contains("/whatsapp") && !lowPath.contains("/download")) {
+					cleanExcluded.add(path);
+				}
+			}
+		}
+
+		// Передаем в интерфейс идеально чистые списки папок
+		enableTritasticSelect(true, cleanIncluded, cleanExcluded);
 	}
 
 
