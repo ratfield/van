@@ -553,6 +553,13 @@ public class MediaScanner implements Handler.Callback {
 			}
 
 			String artist = tags.getFirst(MediaMetadataExtractor.ARTIST);
+			if (artist != null && !artist.trim().isEmpty()) {
+    try {
+        boolean needsFix = false;
+        for (char c : artist.toCharArray()) { if (c >= 192 && c <= 255) { needsFix = true; break; } }
+        if (needsFix) { artist = new String(artist.getBytes("ISO-8859-1"), "windows-1251"); }
+    } catch (Exception e) {}
+}
 			if (isUnset(artist)) {
 				artist = "<No Artist>";
 				songFlags |= MediaLibrary.SONG_FLAG_NO_ARTIST;
