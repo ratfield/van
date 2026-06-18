@@ -46,6 +46,8 @@ public class FileSystemAdapter
 	extends SortableAdapter
 	implements LibraryAdapter
 {
+		// Кэш для хранения уже посчитанного времени папок
+	private final java.util.HashMap<String, String> mFolderCache = new java.util.HashMap<>();
 	private static final Pattern SPACE_SPLIT = Pattern.compile("\\s+");
 	private static final Pattern FILE_SEPARATOR = Pattern.compile(File.separator);
 	private static final Pattern GUESS_MUSIC = Pattern.compile("^(.+\\.(mp3|ogg|mka|opus|flac|aac|m4a|wav))$", Pattern.CASE_INSENSITIVE);
@@ -478,13 +480,19 @@ public class FileSystemAdapter
 	}
 	private String getFolderDurationString(File folder) {
 	if (folder == null || !folder.isDirectory()) return null;
+	
+	String folderPath = folder.getAbsolutePath();
+	// Если папка уже сканировалась, мгновенно берем готовое время из оперативной памяти
+	if (mFolderCache.containsKey(folderPath)) {
+		return mFolderCache.get(folderPath);
+	}
+
 	File[] files = folder.listFiles();
 	if (files == null) return null;
 
 	long totalDurationMs = 0;
 	boolean hasMusic = false;
 
-	// Создаем системный считыватель метаданных Android
 	android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
 
 	for (File file : files) {
@@ -500,28 +508,32 @@ public class FileSystemAdapter
 					}
 				}
 			} catch (Exception e) {
-				// Файл поврежден или не имеет тега длительности, просто пропускаем его
+				// Пропускаем поврежденный аудиофайл
 			}
 		}
 	}
 
 	try {
-		retriever.release(); // Обязательно освобождаем память системы
+		retriever.release();
 	} catch (Exception e) {}
 
-	if (!hasMusic || totalDurationMs <= 0) return null;
+	String result = null;
+	if (hasMusic && totalDurationMs > 0) {
+		long seconds = totalDurationMs / 1000;
+		long hours = seconds / 3600;
+		long minutes = (seconds % 3600) / 60;
+		seconds = seconds % 60;
 
-	// Переводим миллисекунды в красивую строку времени
-	long seconds = totalDurationMs / 1000;
-	long hours = seconds / 3600;
-	long minutes = (seconds % 3600) / 60;
-	seconds = seconds % 60;
-
-	if (hours > 0) {
-		return String.format("%d:%02d:%02d", hours, minutes, seconds);
-	} else {
-		return String.format("%02d:%02d", minutes, seconds);
+		if (hours > 0) {
+			result = String.format("%d:%02d:%02d", hours, minutes, seconds);
+		} else {
+			result = String.format("%02d:%02d", minutes, seconds);
+		}
 	}
+
+	// Сохраняем результат в кэш-память (даже null, чтобы повторно не сканировать пустые папки)
+	mFolderCache.put(folderPath, result);
+	return result;
 }
 
 }
