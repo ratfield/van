@@ -276,17 +276,19 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 	}
 	mElapsedView.setText(DateUtils.formatElapsedTime(mTimeBuilder, position / 1000));
 
-	// --- НАЧАЛО ЛОГИКИ СЧЕТЧИКА ПАПКИ ---
+		// --- НАЧАЛО ЛОГИКИ СЧЕТЧИКА ПАПКИ ---
 	try {
 		int currentQueuePos = service.getTimelinePosition();
 		long totalFolderDuration = 0;
 		long completedFolderDuration = 0;
+		int totalTracks = 0;
 
 		// Пробегаем по всей текущей очереди воспроизведения
 		for (int i = 0; ; i++) {
 			Song song = service.getSongByQueuePosition(i);
 			if (song == null) break; // Конец очереди
 
+			totalTracks++;
 			totalFolderDuration += song.duration;
 			if (i < currentQueuePos) {
 				completedFolderDuration += song.duration;
@@ -303,7 +305,7 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 				mFolderSeekBar.setProgress((int)(1000 * globalElapsed / totalFolderDuration));
 			}
 
-			// Форматируем время изолированно, чтобы StringBuilder не затирался
+			// Форматируем время изолированно
 			StringBuilder sb1 = new StringBuilder();
 			StringBuilder sb2 = new StringBuilder();
 			StringBuilder sb3 = new StringBuilder();
@@ -311,12 +313,16 @@ public class SlidingPlaybackActivity extends PlaybackActivity
 			String totalStr = DateUtils.formatElapsedTime(sb2, totalFolderDuration / 1000);
 			String remainingStr = DateUtils.formatElapsedTime(sb3, globalRemaining / 1000);
 
+			// Минималистичный формат: "4/11 | 00:00 / 00:00"
+			int displayTrackNum = currentQueuePos + 1;
+			String folderProgressInfo = displayTrackNum + "/" + totalTracks + "  |  " + elapsedStr + " / " + totalStr;
+
 			// Выводим текст на экран
 			if (mFolderElapsedView != null) {
-				mFolderElapsedView.setText("Прослушано " + elapsedStr + " из " + totalStr);
+				mFolderElapsedView.setText(folderProgressInfo);
 			}
 			if (mFolderDurationView != null) {
-				mFolderDurationView.setText("Осталось " + remainingStr);
+				mFolderDurationView.setText(remainingStr);
 			}
 		}
 	} catch (Exception e) {
