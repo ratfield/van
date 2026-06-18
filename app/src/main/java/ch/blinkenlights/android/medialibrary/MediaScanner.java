@@ -540,6 +540,13 @@ public class MediaScanner implements Handler.Callback {
 				title = file.getName();
 
 			String album = tags.getFirst(MediaMetadataExtractor.ALBUM);
+			if (album != null && !album.trim().isEmpty()) {
+    try {
+        boolean needsFix = false;
+        for (char c : album.toCharArray()) { if (c >= 192 && c <= 255) { needsFix = true; break; } }
+        if (needsFix) { album = new String(album.getBytes("ISO-8859-1"), "windows-1251"); }
+    } catch (Exception e) {}
+}
 			if (isUnset(album)) {
 				album = "<No Album>";
 				songFlags |= MediaLibrary.SONG_FLAG_NO_ALBUM;
