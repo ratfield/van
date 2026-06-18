@@ -27,11 +27,11 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Release APK
-      run: ./gradlew assembleRelease
+    - name: Build Fixed Debug APK
+      run: ./gradlew assembleDebug -Pandroid.injected.signing.store.file=$(pwd)/app/debug.keystore -Pandroid.injected.signing.store.password=android -Pandroid.injected.signing.key.alias=androiddebugkey -Pandroid.injected.signing.key.password=android
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: vanilla-music-custom-apk
-        path: app/build/outputs/apk/release/*.apk
+        path: app/build/outputs/apk/debug/*.apk
