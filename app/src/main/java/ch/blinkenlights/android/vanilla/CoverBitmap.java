@@ -134,7 +134,7 @@ public final class CoverBitmap {
  paint.setTextScaleX(1.0f); // сброс масштаба перед выходом
  canvas.restore();
 
- } // === КОНЕЦ МЕТОДА drawText ===
+ }
 
 	}
 
