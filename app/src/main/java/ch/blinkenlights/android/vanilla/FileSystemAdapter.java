@@ -469,4 +469,37 @@ public class FileSystemAdapter
 		// else: no context menu, but consume event.
 		return true;
 	}
+	private String getFolderDurationString(File folder) {
+	if (folder == null || !folder.isDirectory()) return null;
+	File[] files = folder.listFiles();
+	if (files == null) return null;
+
+	long totalDurationMs = 0;
+	boolean hasMusic = false;
+
+	for (File file : files) {
+		if (!file.isDirectory() && GUESS_MUSIC.matcher(file.getName()).matches()) {
+			long duration = MediaUtils.getDurationForFile(file.getAbsolutePath());
+			if (duration > 0) {
+				totalDurationMs += duration;
+				hasMusic = true;
+			}
+		}
+	}
+
+	if (!hasMusic || totalDurationMs <= 0) return null;
+
+	// Переводим миллисекунды в красивую строку времени
+	long seconds = totalDurationMs / 1000;
+	long hours = seconds / 3600;
+	long minutes = (seconds % 3600) / 60;
+	seconds = seconds % 60;
+
+	if (hours > 0) {
+		return String.format("%d:%02d:%02d", hours, minutes, seconds);
+	} else {
+		return String.format("%02d:%02d", minutes, seconds);
+	}
+}
+
 }
