@@ -480,45 +480,37 @@ public class FileSystemAdapter
 	}
 	private String getFolderDurationString(File folder) {
 	if (folder == null || !folder.isDirectory()) return null;
-	
+
 	String folderPath = folder.getAbsolutePath();
-	// Если папка уже сканировалась, мгновенно берем готовое время из оперативной памяти
+	// Оставляем кэш в оперативной памяти, чтобы при скролле списков база данных вообще не дергалась
 	if (mFolderCache.containsKey(folderPath)) {
 		return mFolderCache.get(folderPath);
 	}
 
-	File[] files = folder.listFiles();
-	if (files == null) return null;
-
 	long totalDurationMs = 0;
-	boolean hasMusic = false;
+	android.database.Cursor cursor = null;
+	try {
+		// Делаем мгновенный точечный запрос к системной базе MediaStore через mActivity
+		android.net.Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+		String[] projection = { "SUM(" + android.provider.MediaStore.Audio.Media.DURATION + ")" };
+		String selection = android.provider.MediaStore.Audio.Media.DATA + " LIKE ?";
+		String[] selectionArgs = { folderPath + "/%" };
 
-	android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
-
-	for (File file : files) {
-		if (!file.isDirectory() && GUESS_MUSIC.matcher(file.getName()).matches()) {
-			try {
-				retriever.setDataSource(file.getAbsolutePath());
-				String time = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
-				if (time != null) {
-					long duration = Long.parseLong(time);
-					if (duration > 0) {
-						totalDurationMs += duration;
-						hasMusic = true;
-					}
-				}
-			} catch (Exception e) {
-				// Пропускаем поврежденный аудиофайл
-			}
+		cursor = mActivity.getContentResolver().query(uri, projection, selection, selectionArgs, null);
+		if (cursor != null && cursor.moveToFirst()) {
+			totalDurationMs = cursor.getLong(0);
+		}
+	} catch (Exception e) {
+		android.util.Log.e("VanillaMusic", "Ошибка быстрого запроса времени папки", e);
+	} finally {
+		if (cursor != null) {
+			try { cursor.close(); } catch (Exception e) {}
 		}
 	}
 
-	try {
-		retriever.release();
-	} catch (Exception e) {}
-
 	String result = null;
-	if (hasMusic && totalDurationMs > 0) {
+	if (totalDurationMs > 0) {
+		// Форматируем миллисекунды в красивую строгую строку времени
 		long seconds = totalDurationMs / 1000;
 		long hours = seconds / 3600;
 		long minutes = (seconds % 3600) / 60;
@@ -531,7 +523,7 @@ public class FileSystemAdapter
 		}
 	}
 
-	// Сохраняем результат в кэш-память (даже null, чтобы повторно не сканировать пустые папки)
+	// Запоминаем результат в оперативную память
 	mFolderCache.put(folderPath, result);
 	return result;
 }
