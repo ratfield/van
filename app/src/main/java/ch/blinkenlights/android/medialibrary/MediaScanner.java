@@ -529,6 +529,13 @@ public class MediaScanner implements Handler.Callback {
 
 			// Get tags which always must be set
 			String title = tags.getFirst(MediaMetadataExtractor.TITLE);
+			if (title != null && !title.trim().isEmpty()) {
+    try {
+        boolean needsFix = false;
+        for (char c : title.toCharArray()) { if (c >= 192 && c <= 255) { needsFix = true; break; } }
+        if (needsFix) { title = new String(title.getBytes("ISO-8859-1"), "windows-1251"); }
+    } catch (Exception e) {}
+}
 			if (isUnset(title))
 				title = file.getName();
 
