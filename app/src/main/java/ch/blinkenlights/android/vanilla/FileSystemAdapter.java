@@ -260,11 +260,22 @@ public class FileSystemAdapter
 		final File file = mFiles[pos];
 		final String title = file.getName();
 
-		holder.id = pos;
-		holder.title = title;
-		row.setText(title);
-		row.getCoverView().setImageResource(getImageResourceForFile(file));
-		return row;
+			final File file = mFiles[pos];
+	String title = file.getName();
+	holder.id = pos;
+	holder.title = title;
+
+	// Если это папка, пробуем посчитать время и дописать его красиво справа
+	if (file.isDirectory() && !pointsToParentFolder(file)) {
+		String durationStr = getFolderDurationString(file);
+		if (durationStr != null) {
+			title = title + "   (" + durationStr + ")";
+		}
+	}
+
+	row.setText(title);
+	row.getCoverView().setImageResource(getImageResourceForFile(file));
+	return row;
 	}
 
 	@Override
