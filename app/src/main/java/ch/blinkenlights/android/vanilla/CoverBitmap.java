@@ -66,11 +66,13 @@ public final class CoverBitmap {
 	 */
 	private static final float SLACK_RATIO = 0.95f;
 
-	private static int TEXT_SIZE = -1;
-	private static int TEXT_SIZE_BIG;
-	private static int PADDING;
-	private static int TOP_PADDING;
-	private static int BOTTOM_PADDING;
+	 private static int TEXT_SIZE = -1;
+ private static int TEXT_SIZE_BIG;
+ private static int PADDING;
+ private static int ROW_PADDING; // <-- добавили эту строку
+ private static int TOP_PADDING;
+ private static int BOTTOM_PADDING;
+
 
 	/**
 	 * Initialize the regular text size members.
@@ -79,14 +81,14 @@ public final class CoverBitmap {
 	 */
 	private static void loadTextSizes(Context context)
 	{
-		DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-		TEXT_SIZE = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, metrics);
-		TEXT_SIZE_BIG = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24, metrics);
-		PADDING = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, metrics);
-		// padding to take actionbar into account.
-		TOP_PADDING = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 14, metrics);
-		// space we keep from the view bottom.
-		BOTTOM_PADDING = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 32, metrics);
+		 DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+ TEXT_SIZE = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, metrics);
+ TEXT_SIZE_BIG = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, metrics);
+ PADDING = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, metrics);
+ ROW_PADDING = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, metrics); // <-- новая строка
+ TOP_PADDING = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 14, metrics);
+ BOTTOM_PADDING = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 32, metrics);
+
 	}
 
 	/**
@@ -101,13 +103,39 @@ public final class CoverBitmap {
 	 * will be truncated.
 	 * @param paint The paint style to use
 	 */
-	private static void drawText(Canvas canvas, String text, int left, int top, int width, int maxWidth, Paint paint)
-	{
-		canvas.save();
-		int offset = Math.max(0, maxWidth - width) / 2;
-		canvas.clipRect(left, top, left + maxWidth, top + paint.getTextSize() * 2);
-		canvas.drawText(text, left + offset, top - paint.ascent(), paint);
-		canvas.restore();
+	 private static void drawText(Canvas canvas, String text, int left, int top, int width, int maxWidth,
+ Paint paint)
+ {
+ canvas.save();
+ 
+ // Защита отступов от краев экрана
+ int safeMaxWidth = maxWidth;
+ if (safeMaxWidth >= canvas.getWidth() || safeMaxWidth <= 0) {
+     safeMaxWidth = canvas.getWidth() - (PADDING * 2);
+ }
+ 
+ // Измеряем ширину текста
+ float realWidth = paint.measureText(text);
+ 
+ // Если текст слишком длинный — сжимаем по горизонтали
+ if (realWidth > safeMaxWidth) {
+     float scaleX = (float) safeMaxWidth / realWidth;
+     paint.setTextScaleX(scaleX);
+     width = safeMaxWidth;
+     safeMaxWidth = (int) realWidth;
+ } else {
+     paint.setTextScaleX(1.0f); // дефолтный масштаб
+ }
+
+ int offset = Math.max(0, safeMaxWidth - width) / 2;
+ canvas.clipRect(left, top, left + safeMaxWidth, top + paint.getTextSize() * 2);
+ canvas.drawText(text, left + offset, top - paint.ascent(), paint);
+ 
+ paint.setTextScaleX(1.0f); // сброс масштаба перед выходом
+ canvas.restore();
+
+ } // === КОНЕЦ МЕТОДА drawText ===
+
 	}
 
 	/**
@@ -160,7 +188,7 @@ public final class CoverBitmap {
 		int artistWidth = (int)paint.measureText(artist);
 
 		int boxWidth = Math.min(width, Math.max(titleWidth, Math.max(artistWidth, albumWidth)) + padding * 2);
-		int boxHeight = Math.min(height, titleSize + subSize * 2 + padding * 4);
+		int boxHeight = Math.min(height, titleSize + subSize * 2 + padding * 2 + ROW_PADDING * 2);
 
 		int coverWidth = 0;
 		int coverHeight = 0;
@@ -199,13 +227,11 @@ public final class CoverBitmap {
 
 		paint.setTextSize(titleSize);
 		drawText(canvas, title, left, top, titleWidth, maxWidth, paint);
-		top += titleSize + padding;
-
-		paint.setTextSize(subSize);
-		drawText(canvas, album, left, top, albumWidth, maxWidth, paint);
-		top += subSize + padding;
-
-		drawText(canvas, artist, left, top, artistWidth, maxWidth, paint);
+		top += titleSize + ROW_PADDING; // заменили padding на ROW_PADDING
+paint.setTextSize(subSize);
+drawText(canvas, album, left, top, albumWidth, maxWidth, paint);
+top += subSize + ROW_PADDING;   // заменили padding на ROW_PADDING
+drawText(canvas, artist, left, top, artistWidth, maxWidth, paint);
 
 		return bitmap;
 	}
@@ -234,7 +260,7 @@ public final class CoverBitmap {
 		String album = song.album == null ? "" : song.album;
 		String artist = song.artist == null ? "" : song.artist;
 		// Space required to draw the bottom text.
-		int textTotalHeight = padding + textSizeBig + (padding+textSize) * 2 + padding;
+		int textTotalHeight = padding + textSizeBig + (ROW_PADDING + textSize) * 2 + padding;
 		// Y coord where text shall be placed.
 		int textStart = (verticalMode ? (height-textTotalHeight)/2 : height - bottomPadding - textTotalHeight);
 
@@ -283,13 +309,13 @@ public final class CoverBitmap {
 		paint.setTextSize(textSize);
 
 		// Album
-		top += textSizeBig + padding;
+		top += textSizeBig + ROW_PADDING; // изменили тут
 		twidth = (int)paint.measureText(album);
 		tstart = tshift+(width - tshift - twidth)/2;
 		drawText(canvas, album, tstart, top, width, twidth, paint);
 
 		// Artist
-		top += textSize + padding;
+		top += textSize + ROW_PADDING;    // и изменили тут
 		twidth = (int)paint.measureText(artist);
 		tstart = tshift+(width - tshift - twidth)/2;
 		drawText(canvas, artist, tstart, top, width, twidth, paint);
