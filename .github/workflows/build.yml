@@ -1,9 +1,7 @@
 name: Build Vanilla Music APK
 
 on:
-  push:
-    branches: [ master, main ]
-  workflow_dispatch:
+  workflow_dispatch: # Включена ТОЛЬКО ручная кнопка сборки для любой ветки
 
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
