@@ -528,50 +528,6 @@ public class MediaScanner implements Handler.Callback {
 			songFlags &= ~MediaLibrary.SONG_FLAG_NO_ALBUM;   // May find an album now.
 
 			// Get tags which always must be set
-			// Извлекаем теги напрямую с налету встроенным перекодировщиком кириллицы
-String title = tags.getFirst(MediaMetadataExtractor.TITLE);
-if (title != null && !title.trim().isEmpty()) {
-	try {
-		boolean needsFix = false;
-		for (char c : title.toCharArray()) {
-			if (c >= 192 && c <= 255) { needsFix = true; break; }
-		}
-		if (needsFix) { title = new String(title.getBytes("ISO-8859-1"), "windows-1251"); }
-	} catch (Exception e) {}
-}
-if (isUnset(title))
-title = file.getName();
-
-String album = tags.getFirst(MediaMetadataExtractor.ALBUM);
-if (album != null && !album.trim().isEmpty()) {
-	try {
-		boolean needsFix = false;
-		for (char c : album.toCharArray()) {
-			if (c >= 192 && c <= 255) { needsFix = true; break; }
-		}
-		if (needsFix) { album = new String(album.getBytes("ISO-8859-1"), "windows-1251"); }
-	} catch (Exception e) {}
-}
-if (isUnset(album)) {
-album = "<No Album>";
-songFlags |= MediaLibrary.SONG_FLAG_NO_ALBUM;
-}
-
-String artist = tags.getFirst(MediaMetadataExtractor.ARTIST);
-if (artist != null && !artist.trim().isEmpty()) {
-	try {
-		boolean needsFix = false;
-		for (char c : artist.toCharArray()) {
-			if (c >= 192 && c <= 255) { needsFix = true; break; }
-		}
-		if (needsFix) { artist = new String(artist.getBytes("ISO-8859-1"), "windows-1251"); }
-	} catch (Exception e) {}
-}
-if (isUnset(artist)) {
-artist = "<No Artist>";
-songFlags |= MediaLibrary.SONG_FLAG_NO_ARTIST;
-}
-
 			String title = tags.getFirst(MediaMetadataExtractor.TITLE);
 			if (isUnset(title))
 				title = file.getName();
@@ -872,6 +828,5 @@ songFlags |= MediaLibrary.SONG_FLAG_NO_ARTIST;
 			return next;
 		}
 	}
-	}
-
+}
 
