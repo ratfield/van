@@ -27,8 +27,8 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+    - name: Build Fixed Debug APK
+      run: ./gradlew assembleDebug -Pandroid.injected.signing.store.file=$(pwd)/release.keystore -Pandroid.injected.signing.store.password=android -Pandroid.injected.signing.key.alias=release -Pandroid.injected.signing.key.password=android
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
