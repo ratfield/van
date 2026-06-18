@@ -528,23 +528,20 @@ public class MediaScanner implements Handler.Callback {
 			songFlags &= ~MediaLibrary.SONG_FLAG_NO_ALBUM;   // May find an album now.
 
 			// Get tags which always must be set
-			// --- НАЧАЛО НАШЕГО ДЕКОДЕРА КИРИЛЛИЦЫ ---
-class TagFixer {
-	public static String fix(String text) {
-		if (text == null || text.trim().isEmpty()) return text;
-		try {
-			boolean needsFix = false;
-			for (char c : text.toCharArray()) {
-				if (c >= 192 && c <= 255) { needsFix = true; break; }
-			}
-			if (needsFix) {
-				return new String(text.getBytes("ISO-8859-1"), "windows-1251");
-			}
-		} catch (Exception e) {}
-		return text;
-	}
+			// Оставляем только вызовы метода fixTagEncoding
+String title = fixTagEncoding(tags.getFirst(MediaMetadataExtractor.TITLE));
+if (isUnset(title))
+title = file.getName();
+String album = fixTagEncoding(tags.getFirst(MediaMetadataExtractor.ALBUM));
+if (isUnset(album)) {
+album = "<No Album>";
+songFlags |= MediaLibrary.SONG_FLAG_NO_ALBUM;
 }
-// --- КОНЕЦ НАШЕГО ДЕКОДЕРА ---
+String artist = fixTagEncoding(tags.getFirst(MediaMetadataExtractor.ARTIST));
+if (isUnset(artist)) {
+artist = "<No Artist>";
+songFlags |= MediaLibrary.SONG_FLAG_NO_ARTIST;
+}
 
 String title = TagFixer.fix(tags.getFirst(MediaMetadataExtractor.TITLE));
 if (isUnset(title))
@@ -859,5 +856,19 @@ songFlags |= MediaLibrary.SONG_FLAG_NO_ARTIST;
 			return next;
 		}
 	}
+	private static String fixTagEncoding(String text) {
+		if (text == null || text.trim().isEmpty()) return text;
+		try {
+			boolean needsFix = false;
+			for (char c : text.toCharArray()) {
+				if (c >= 192 && c <= 255) { needsFix = true; break; }
+			}
+			if (needsFix) {
+				return new String(text.getBytes("ISO-8859-1"), "windows-1251");
+			}
+		} catch (Exception e) {}
+		return text;
+	}
 }
+
 
