@@ -257,15 +257,11 @@ public class FileSystemAdapter
 			holder = (ViewHolder)row.getTag();
 		}
 
-		final File file = mFiles[pos];
-		final String title = file.getName();
-
 			final File file = mFiles[pos];
 	String title = file.getName();
 	holder.id = pos;
 	holder.title = title;
 
-	// Если это папка, пробуем посчитать время и дописать его красиво справа
 	if (file.isDirectory() && !pointsToParentFolder(file)) {
 		String durationStr = getFolderDurationString(file);
 		if (durationStr != null) {
@@ -488,15 +484,30 @@ public class FileSystemAdapter
 	long totalDurationMs = 0;
 	boolean hasMusic = false;
 
+	// Создаем системный считыватель метаданных Android
+	android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
+
 	for (File file : files) {
 		if (!file.isDirectory() && GUESS_MUSIC.matcher(file.getName()).matches()) {
-			long duration = MediaUtils.getDurationForFile(file.getAbsolutePath());
-			if (duration > 0) {
-				totalDurationMs += duration;
-				hasMusic = true;
+			try {
+				retriever.setDataSource(file.getAbsolutePath());
+				String time = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+				if (time != null) {
+					long duration = Long.parseLong(time);
+					if (duration > 0) {
+						totalDurationMs += duration;
+						hasMusic = true;
+					}
+				}
+			} catch (Exception e) {
+				// Файл поврежден или не имеет тега длительности, просто пропускаем его
 			}
 		}
 	}
+
+	try {
+		retriever.release(); // Обязательно освобождаем память системы
+	} catch (Exception e) {}
 
 	if (!hasMusic || totalDurationMs <= 0) return null;
 
