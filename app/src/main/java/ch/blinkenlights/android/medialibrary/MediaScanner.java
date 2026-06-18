@@ -135,6 +135,14 @@ public class MediaScanner implements Handler.Callback {
 	public void startFullScan() {
 		MediaLibrary.Preferences prefs = MediaLibrary.getPreferences(mContext);
 		for (String path : prefs.mediaFolders) {
+			        String lowPath = path.toLowerCase();
+        if (lowPath.equals("/storage/emulated/0") || lowPath.equals("/storage/emulated/0/") || 
+            lowPath.endsWith("/storage") || lowPath.contains("/android") || 
+            lowPath.contains("/alarms") || lowPath.contains("/notifications") || 
+            lowPath.contains("/ringtones") || lowPath.contains("/telegram") || 
+            lowPath.contains("/whatsapp") || lowPath.contains("/download")) {
+            continue; // Пропускаем системный мусор
+        }
 			mScanPlan.addNextStep(RPC_READ_DIR, new File(path));
 		}
 		mScanPlan.addNextStep(RPC_LIBRARY_VRFY, null);
