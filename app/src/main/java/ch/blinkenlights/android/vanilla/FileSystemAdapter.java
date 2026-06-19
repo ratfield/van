@@ -17,6 +17,11 @@ import java.util.regex.Pattern;
 public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter {
 	private final java.util.HashMap<String, String> mFolderCache = new java.util.HashMap<>();
 	private final java.util.HashMap<String, android.graphics.Bitmap> mCoverCache = new java.util.HashMap<>();
+		// НАШ НОВЫЙ КОД: Описание структуры ViewHolder, которую мы случайно пропустили
+	public static class ViewHolder {
+		public int id;
+		public String title;
+	}
 	
 	private static final Pattern SPACE_SPLIT = Pattern.compile("\\s+");
 	private static final Pattern FILE_SEPARATOR = Pattern.compile(File.separator);
