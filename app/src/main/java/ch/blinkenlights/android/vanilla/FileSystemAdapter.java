@@ -48,18 +48,24 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
 	String[] mFilter;
 
 	private final FilenameFilter mFileFilter = new FilenameFilter() {
-		@Override
-		public boolean accept(File dir, String filename) {
-			if (filename.charAt(0) == '.') return false;
-			if (mFilter != null) {
-				filename = filename.toLowerCase();
-				for (String term : mFilter) {
-					if (!filename.contains(term)) return false;
-				}
-			}
-			return true;
-		}
-	};
+    @Override
+    public boolean accept(File dir, String filename) {
+        if (filename.charAt(0) == '.') return false;
+
+        File file = new File(dir, filename);
+        if (file.isFile() && !GUESS_MUSIC.matcher(filename).matches()) {
+            return false;
+        }
+
+        if (mFilter != null) {
+            filename = filename.toLowerCase();
+            for (String term : mFilter) {
+                if (!filename.contains(term)) return false;
+            }
+        }
+        return true;
+    }
+};
 
 	private final Comparator<File> mFileComparator = new Comparator<File>() {
 		@Override
