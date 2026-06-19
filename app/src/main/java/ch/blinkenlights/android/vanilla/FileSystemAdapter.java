@@ -48,6 +48,7 @@ public class FileSystemAdapter
 {
 		// Кэш для хранения уже посчитанного времени папок
 	private final java.util.HashMap<String, String> mFolderCache = new java.util.HashMap<>();
+	private final java.util.HashMap<String, android.graphics.Bitmap> mCoverCache = new java.util.HashMap<>();
 	private static final Pattern SPACE_SPLIT = Pattern.compile("\\s+");
 	private static final Pattern FILE_SEPARATOR = Pattern.compile(File.separator);
 	private static final Pattern GUESS_MUSIC = Pattern.compile("^(.+\\.(mp3|ogg|mka|opus|flac|aac|m4a|wav))$", Pattern.CASE_INSENSITIVE);
@@ -272,8 +273,60 @@ public class FileSystemAdapter
 	}
 
 	row.setText(title);
-	row.getCoverView().setImageResource(getImageResourceForFile(file));
-	return row;
+			row.setText(title);
+
+		// ==========================================
+		// НАШ НОВЫЙ КОД: Поиск JPG обложки в папке
+		// ==========================================
+		if (file.isDirectory() && !file.getName().equals("..")) {
+			final String folderPath = file.getAbsolutePath();
+			if (mCoverCache.containsKey(folderPath)) {
+				row.getCoverView().setImageBitmap(mCoverCache.get(folderPath));
+			} else {
+				row.getCoverView().setImageResource(R.drawable.folder);
+				final DraggableRow finalRow = row;
+				final int currentHolderId = holder.id;
+				
+				// Запуск легкого фонового потока
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						File[] files = new File(folderPath).listFiles();
+						if (files != null) {
+							for (File f : files) {
+								String name = f.getName().toLowerCase();
+								if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+									try {
+										android.graphics.BitmapFactory.Options options = new android.graphics.BitmapFactory.Options();
+										options.inSampleSize = 4; // Сжатие при чтении
+										final android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeFile(f.getAbsolutePath(), options);
+										if (bmp != null) {
+											mActivity.runOnUiThread(new Runnable() {
+												@Override
+												public void run() {
+													mCoverCache.put(folderPath, bmp);
+													ViewHolder vh = (ViewHolder) finalRow.getTag();
+													if (vh != null && vh.id == currentHolderId) {
+														finalRow.getCoverView().setImageBitmap(bmp);
+													}
+												}
+											});
+										}
+										break;
+									} catch (Throwable t) {}
+								}
+							}
+						}
+					}
+				}).start();
+			}
+		} else {
+			row.getCoverView().setImageResource(getImageResourceForFile(file));
+		}
+		// ==========================================
+		// КОНЕЦ НАШЕГО НОВОГО КОДА
+		// ==========================================
+		return row;
 	}
 
 	@Override
