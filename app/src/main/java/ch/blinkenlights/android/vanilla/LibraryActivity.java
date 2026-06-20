@@ -197,13 +197,23 @@ public class LibraryActivity
 			pager.setCurrentItem(page);
 		}
 
-		loadLimiterIntent(getIntent());
-		bindControlButtons();
+		    loadLimiterIntent(getIntent());
+    
+    // НАШ КОД: Восстанавливаем папку при старте
+    String lastFolder = settings.getString("last_folder_path", null);
+    if (lastFolder != null) {
+        File folderFile = new File(lastFolder);
+        if (folderFile.exists() && folderFile.isDirectory()) {
+            mPagerAdapter.setLimiter(FileSystemAdapter.buildLimiter(folderFile));
+            updateLimiterViews();
+        }
+    }
 
-		if (state != null && state.getBoolean("launch_search")) {
-			mBottomBarControls.showSearch(true);
-		}
-	}
+    bindControlButtons();
+    if (state != null && state.getBoolean("launch_search")) {
+        mBottomBarControls.showSearch(true);
+    }
+}
 
 	@Override
 	public void onStart()
