@@ -228,7 +228,35 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
 		} else {
 			row.getCoverView().setImageResource(getImageResourceForFile(file));
 		}
-		return row;
+		    // НАШ КОД: Подсветка только играющей ПАПКИ
+    try {
+        android.widget.TextView textView = (android.widget.TextView) row.findViewById(R.id.text);
+        if (textView != null) {
+            // Если это файл — принудительно возвращаем ему стандартный цвет
+            if (!file.isDirectory()) {
+                textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView);
+            } else {
+                String currentPlayingPath = null;
+                if (PlaybackService.hasInstance() && PlaybackService.get(mActivity) != null) {
+                    PlaybackService service = PlaybackService.get(mActivity);
+                    if (service.getSong(0) != null) {
+                        currentPlayingPath = service.getSong(0).path;
+                    }
+                }
+
+                String thisItemPath = file.getAbsolutePath();
+                // Проверяем: если музыка играет, и путь трека начинается с пути этой папки
+                if (currentPlayingPath != null && currentPlayingPath.startsWith(thisItemPath + File.separator)) {
+                    textView.setTextColor(android.graphics.Color.GREEN); // Красим папку в зеленый
+                } else {
+                    textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView);
+                }
+            }
+        }
+    } catch (Exception e) {
+        // Полная защита от сбоев
+    }
+   		return row;
 	}
 
 	@Override
