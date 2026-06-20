@@ -228,6 +228,25 @@ public class LibraryActivity
 	/**
 	 * Load settings and cache them.
 	 */
+	@Override
+public void onPause()
+{
+    super.onPause();
+    try {
+        if (mPagerAdapter != null) {
+            Limiter limiter = mPagerAdapter.getCurrentLimiter();
+            if (limiter != null && limiter.type == MediaUtils.TYPE_FILE && limiter.data instanceof File) {
+                SharedPreferences settings = SharedPrefHelper.getSettings(this);
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putString("last_folder_path", ((File) limiter.data).getAbsolutePath());
+                editor.apply();
+            }
+        }
+    } catch (Exception e) {
+        // Защита от сбоев
+    }
+}
+
 	private void loadPreferences() {
 		SharedPreferences settings = SharedPrefHelper.getSettings(this);
 		mDefaultAction = Integer.parseInt(settings.getString(PrefKeys.DEFAULT_ACTION_INT, PrefDefaults.DEFAULT_ACTION_INT));
