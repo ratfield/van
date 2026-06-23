@@ -46,19 +46,29 @@ public class CustomPlaybackDB extends SQLiteOpenHelper {
 
     // --- МЕТОДЫ РАБОТЫ С ДАННЫМИ ---
 
-    // Быстрое сохранение позиции (INSERT OR REPLACE)
+        // Безопасное сохранение позиции с принудительным сбросом на физический диск (Fsync)
     public void savePosition(long songId, int position) {
+        SQLiteDatabase db = null;
         try {
-            SQLiteDatabase db = this.getWritableDatabase();
+            db = this.getWritableDatabase();
+            db.beginTransaction(); // Открываем транзакцию
+            
             ContentValues values = new ContentValues();
             values.put(KEY_SONG_ID, songId);
             values.put(KEY_POSITION, position);
             values.put(KEY_TIMESTAMP, System.currentTimeMillis());
 
-            // CONFLICT_REPLACE обновит строку, если такой songId уже существует
             db.insertWithOnConflict(TABLE_POSITIONS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+            
+            db.setTransactionSuccessful(); // Маркируем успешность
         } catch (Exception e) {
             // Молча гасим ошибки БД, чтобы плеер ни при каких условиях не упал
+        } finally {
+            if (db != null) {
+                try {
+                    db.endTransaction(); // ИМЕННО ТУТ данные принудительно улетают на чип памяти
+                } catch (Exception ignored) {}
+            }
         }
     }
 
