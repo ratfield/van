@@ -1346,12 +1346,20 @@ public final class PlaybackService extends Service
 	 * @return The new current song
 	 */
 	private Song setCurrentSong(int delta)
-	{
-		if (mMediaPlayer == null)
-			return null;
+{
+    if (mMediaPlayer == null)
+        return null;
 
-		if (mMediaPlayer.isPlaying())
-			mMediaPlayer.stop();
+    // Сбрасываем позицию в БД только при реальном переключении (delta != 0)
+    if (delta != 0 && mCurrentSong != null) {
+        Song nextSong = mTimeline.getSong(delta); // Смотрим, какой трек идет следующим по очереди
+        if (nextSong != null && nextSong.id != mCurrentSong.id) {
+            CustomPlaybackDB.getInstance(this).savePosition(nextSong.id, 0);
+        }
+    }
+
+    if (mMediaPlayer.isPlaying())
+        mMediaPlayer.stop();
 
 		Song song = mTimeline.shiftCurrentSong(delta);
 		mCurrentSong = song;
@@ -1384,15 +1392,8 @@ public final class PlaybackService extends Service
 	}
 
 	private void processSong(Song song)
-	{
-		    // Custom: Если переключились на СЛЕДУЮЩИЙ трек (автопереключение),
-    // принудительно пишем в базу 0 для новой песни, чтобы она началась с начала
-    if (song != null && mCurrentSong != null && mCurrentSong.id != song.id) {
-        CustomPlaybackDB.getInstance(this).savePosition(song.id, 0);
-    }
-		/* Save our 'current' state as the try block may set the ERROR flag (which clears the PLAYING flag */
+	{	
 		boolean playing = (mState & FLAG_PLAYING) != 0;
-
 		try {
 			mMediaPlayerInitialized = false;
 			mMediaPlayer.reset();
