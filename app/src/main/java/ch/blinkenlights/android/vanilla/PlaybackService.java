@@ -1385,6 +1385,11 @@ public final class PlaybackService extends Service
 
 	private void processSong(Song song)
 	{
+		    // Custom: Если переключились на СЛЕДУЮЩИЙ трек (автопереключение),
+    // принудительно пишем в базу 0 для новой песни, чтобы она началась с начала
+    if (song != null && mCurrentSong != null && mCurrentSong.id != song.id) {
+        CustomPlaybackDB.getInstance(this).savePosition(song.id, 0);
+    }
 		/* Save our 'current' state as the try block may set the ERROR flag (which clears the PLAYING flag */
 		boolean playing = (mState & FLAG_PLAYING) != 0;
 
