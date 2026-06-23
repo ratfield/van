@@ -540,7 +540,7 @@ public final class PlaybackService extends Service
             public void run() {
                 try {
                     // Пишем только если плеер инициализирован, трек играет и песня существует
-                    if (mMediaPlayerInitialized && mMediaPlayer != null && mMediaPlayer.isPlaying() && mCurrentSong != null) {
+                    if (mMediaPlayerInitialized && mMediaPlayer != null && mCurrentSong != null) {
                         int currentPos = mMediaPlayer.getCurrentPosition();
                         int duration = mMediaPlayer.getDuration();
                         
@@ -1421,9 +1421,6 @@ if (song != null) {
     
     if (savedPos > 0) {
         mMediaPlayer.seekTo(savedPos);
-        // Сразу после чтения сбрасываем позицию в БД на 0,
-        // чтобы при ручном повторном клике на этот же трек он не мотался назад
-        CustomPlaybackDB.getInstance(this).savePosition(song.id, 0);
     } else if (mPendingSeek != 0) {
         // Отработает оригинальный механизм, если в нашей БД пусто
         if (mPendingSeekSong == song.id)
