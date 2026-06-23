@@ -323,6 +323,10 @@ public final class PlaybackService extends Service
 
 	private Looper mLooper;
 	private Handler mHandler;
+    // Custom: Переменные для фонового сохранения позиции в микро-БД
+    private final android.os.Handler mCustomSaveHandler = new android.os.Handler();
+    private Runnable mCustomSaveRunnable;
+    private static final int CUSTOM_SAVE_INTERVAL = 3000; // Интервал в миллисекундах (3 секунды)
 	VanillaMediaPlayer mMediaPlayer;
 	VanillaMediaPlayer mPreparedMediaPlayer;
 	private boolean mMediaPlayerInitialized;
@@ -530,6 +534,31 @@ public final class PlaybackService extends Service
 		setupSensor();
 
 		ScheduledLibraryUpdate.scheduleUpdate(this);
+	        // Custom: Инициализируем и запускаем фоновый таймер сохранения позиции в БД
+        mCustomSaveRunnable = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // Пишем только если плеер инициализирован, трек играет и песня существует
+                    if (mMediaPlayerInitialized && mMediaPlayer != null && mMediaPlayer.isPlaying() && mCurrentSong != null) {
+                        int currentPos = mMediaPlayer.getCurrentPosition();
+                        int duration = mMediaPlayer.getDuration();
+                        
+                        // Защита хвоста трека: если до конца осталось меньше 4 секунд, пишем 0
+                        if (duration > 0 && (duration - currentPos < 4000)) {
+                            CustomPlaybackDB.getInstance(PlaybackService.this).savePosition(mCurrentSong.id, 0);
+                        } else {
+                            CustomPlaybackDB.getInstance(PlaybackService.this).savePosition(mCurrentSong.id, currentPos);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Молча гасим любые ошибки, чтобы сервис не упал
+                }
+                // Перезапускаем таймер через 3 секунды
+                mCustomSaveHandler.postDelayed(this, CUSTOM_SAVE_INTERVAL);
+            }
+        };
+        mCustomSaveHandler.postDelayed(mCustomSaveRunnable, CUSTOM_SAVE_INTERVAL);
 	}
 
 	@Override
@@ -608,6 +637,7 @@ public final class PlaybackService extends Service
 	@Override
 	public void onDestroy()
 	{
+		mCustomSaveHandler.removeCallbacks(mCustomSaveRunnable); // Custom: Останавливаем таймер
 		sInstance = null;
 
 		mLooper.quit();
