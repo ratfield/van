@@ -1411,18 +1411,30 @@ public final class PlaybackService extends Service
 
 
 			mMediaPlayerInitialized = true;
-			// Cancel any pending gapless updates and re-send them
-			mHandler.removeMessages(MSG_GAPLESS_UPDATE);
-			mHandler.sendEmptyMessage(MSG_GAPLESS_UPDATE);
+// Cancel any pending gapless updates and re-send them
+mHandler.removeMessages(MSG_GAPLESS_UPDATE);
+mHandler.sendEmptyMessage(MSG_GAPLESS_UPDATE);
 
-			if (mPendingSeek != 0) {
-				if (mPendingSeekSong == song.id)
-					mMediaPlayer.seekTo(mPendingSeek);
-				// Clear this even if we did not seek:
-				// We somehow managed to play a different song, so
-				// whatever we were supposed to seek to, is invalid now.
-				mPendingSeek = 0;
-			}
+// Custom: Читаем секунды из нашей автономной микро-БД прямо в MediaPlayer
+if (song != null) {
+    int savedPos = CustomPlaybackDB.getInstance(this).getPosition(song.id);
+    
+    if (savedPos > 0) {
+        mMediaPlayer.seekTo(savedPos);
+        // Сразу после чтения сбрасываем позицию в БД на 0,
+        // чтобы при ручном повторном клике на этот же трек он не мотался назад
+        CustomPlaybackDB.getInstance(this).savePosition(song.id, 0);
+    } else if (mPendingSeek != 0) {
+        // Отработает оригинальный механизм, если в нашей БД пусто
+        if (mPendingSeekSong == song.id)
+            mMediaPlayer.seekTo(mPendingSeek);
+        mPendingSeek = 0;
+    }
+} else if (mPendingSeek != 0) {
+    if (mPendingSeekSong == song.id)
+        mMediaPlayer.seekTo(mPendingSeek);
+    mPendingSeek = 0;
+}
 
 			if ((mState & FLAG_PLAYING) != 0)
 				mMediaPlayer.start();
