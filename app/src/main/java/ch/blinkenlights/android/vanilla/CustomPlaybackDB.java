@@ -18,7 +18,6 @@ public class CustomPlaybackDB extends SQLiteOpenHelper {
 
     private static CustomPlaybackDB sInstance;
 
-    // Синглтон, чтобы не плодить подключения к БД из разных мест
     public static synchronized CustomPlaybackDB getInstance(Context context) {
         if (sInstance == null) {
             sInstance = new CustomPlaybackDB(context.getApplicationContext());
@@ -41,38 +40,22 @@ public class CustomPlaybackDB extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Нам пока обновлять нечего, база простая
     }
 
-    // --- МЕТОДЫ РАБОТЫ С ДАННЫМИ ---
-
-        // Безопасное сохранение позиции с принудительным сбросом на физический диск (Fsync)
+    // Лёгкое сохранение (Android сам разберётся с буфером в памяти)
     public void savePosition(long songId, int position) {
-        SQLiteDatabase db = null;
         try {
-            db = this.getWritableDatabase();
-            db.beginTransaction(); // Открываем транзакцию
-            
+            SQLiteDatabase db = this.getWritableDatabase();
             ContentValues values = new ContentValues();
             values.put(KEY_SONG_ID, songId);
             values.put(KEY_POSITION, position);
             values.put(KEY_TIMESTAMP, System.currentTimeMillis());
 
             db.insertWithOnConflict(TABLE_POSITIONS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
-            
-            db.setTransactionSuccessful(); // Маркируем успешность
         } catch (Exception e) {
-            // Молча гасим ошибки БД, чтобы плеер ни при каких условиях не упал
-        } finally {
-            if (db != null) {
-                try {
-                    db.endTransaction(); // ИМЕННО ТУТ данные принудительно улетают на чип памяти
-                } catch (Exception ignored) {}
-            }
         }
     }
 
-    // Быстрое чтение позиции
     public int getPosition(long songId) {
         int position = 0;
         Cursor cursor = null;
@@ -88,7 +71,6 @@ public class CustomPlaybackDB extends SQLiteOpenHelper {
                 position = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_POSITION));
             }
         } catch (Exception e) {
-            // Если что-то пошло не так, просто вернем 0 (начало трека)
         } finally {
             if (cursor != null) {
                 cursor.close();
