@@ -1422,16 +1422,15 @@ if (song != null) {
     
     if (savedPos > 0) {
         mMediaPlayer.seekTo(savedPos);
+        // ДОБАВЛЯЕМ ТОЛЬКО ЭТУ СТРОКУ:
+        mHandler.sendEmptyMessage(MSG_BROADCAST_SEEK); // Принудительно будим ползунок на экране!
     } else if (mPendingSeek != 0) {
-        // Отработает оригинальный механизм, если в нашей БД пусто
-        if (mPendingSeekSong == song.id)
+        if (mPendingSeekSong == song.id) {
             mMediaPlayer.seekTo(mPendingSeek);
+            mHandler.sendEmptyMessage(MSG_BROADCAST_SEEK);
+        }
         mPendingSeek = 0;
     }
-} else if (mPendingSeek != 0) {
-    if (mPendingSeekSong == song.id)
-        mMediaPlayer.seekTo(mPendingSeek);
-    mPendingSeek = 0;
 }
 
 			if ((mState & FLAG_PLAYING) != 0)
