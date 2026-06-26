@@ -229,11 +229,10 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
 			row.getCoverView().setImageResource(getImageResourceForFile(file));
 		}
 		    // НАШ КОД: Подсветка только играющей ПАПКИ
-    try {
+     try {
  android.widget.TextView textView = (android.widget.TextView) row.findViewById(R.id.text);
  if (textView != null) {
  String currentPlayingPath = null;
- // Быстро вытаскиваем путь играющего сейчас трека
  if (PlaybackService.hasInstance() && PlaybackService.get(mActivity) != null) {
  PlaybackService service = PlaybackService.get(mActivity);
  if (service.getSong(0) != null) {
@@ -248,15 +247,14 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
  if (currentPlayingPath != null && currentPlayingPath.startsWith(thisItemPath + File.separator)) {
  textView.setTextColor(android.graphics.Color.GREEN); // Красим активную папку в зеленый
  } else {
- textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView);
+ textView.setTextColor(mDefaultTextColor); // Возвращаем ТОЛЬКО родной цвет, размер шрифта не трогаем!
  }
  } else {
  // --- ВОЗВРАЩАЕМ ФИЧУ ДЛЯ ТРЕКА ---
- // Если это файл и его путь один в один совпадает с играющей песней
  if (currentPlayingPath != null && currentPlayingPath.equals(thisItemPath)) {
  textView.setTextColor(android.graphics.Color.GREEN); // Красим текущий файл в зеленый!
  } else {
- textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView); // Защита от залипания при скролле
+ textView.setTextColor(mDefaultTextColor); // Возвращаем ТОЛЬКО родной цвет, размер шрифта не трогаем!
  }
  }
  }
