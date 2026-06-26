@@ -228,7 +228,7 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
 		} else {
 			row.getCoverView().setImageResource(getImageResourceForFile(file));
 		}
-		    // НАШ КОД: Подсветка только играющей ПАПКИ
+		    // НАШ КОД: Подсветка играющей ПАПКИ и трека
      try {
  android.widget.TextView textView = (android.widget.TextView) row.findViewById(R.id.text);
  if (textView != null) {
@@ -247,14 +247,14 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
  if (currentPlayingPath != null && currentPlayingPath.startsWith(thisItemPath + File.separator)) {
  textView.setTextColor(android.graphics.Color.GREEN); // Красим активную папку в зеленый
  } else {
- textView.setTextColor(mDefaultTextColor); // Возвращаем ТОЛЬКО родной цвет, размер шрифта не трогаем!
+ textView.setTextColor(mDefaultColor); // Исправлено: mDefaultColor вместо mDefaultTextColor
  }
  } else {
  // --- ВОЗВРАЩАЕМ ФИЧУ ДЛЯ ТРЕКА ---
  if (currentPlayingPath != null && currentPlayingPath.equals(thisItemPath)) {
  textView.setTextColor(android.graphics.Color.GREEN); // Красим текущий файл в зеленый!
  } else {
- textView.setTextColor(mDefaultTextColor); // Возвращаем ТОЛЬКО родной цвет, размер шрифта не трогаем!
+ textView.setTextColor(mDefaultColor); // Исправлено: mDefaultColor вместо mDefaultTextColor
  }
  }
  }
