@@ -230,32 +230,40 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
 		}
 		    // НАШ КОД: Подсветка только играющей ПАПКИ
     try {
-        android.widget.TextView textView = (android.widget.TextView) row.findViewById(R.id.text);
-        if (textView != null) {
-            // Если это файл — принудительно возвращаем ему стандартный цвет
-            if (!file.isDirectory()) {
-                textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView);
-            } else {
-                String currentPlayingPath = null;
-                if (PlaybackService.hasInstance() && PlaybackService.get(mActivity) != null) {
-                    PlaybackService service = PlaybackService.get(mActivity);
-                    if (service.getSong(0) != null) {
-                        currentPlayingPath = service.getSong(0).path;
-                    }
-                }
+ android.widget.TextView textView = (android.widget.TextView) row.findViewById(R.id.text);
+ if (textView != null) {
+ String currentPlayingPath = null;
+ // Быстро вытаскиваем путь играющего сейчас трека
+ if (PlaybackService.hasInstance() && PlaybackService.get(mActivity) != null) {
+ PlaybackService service = PlaybackService.get(mActivity);
+ if (service.getSong(0) != null) {
+ currentPlayingPath = service.getSong(0).path;
+ }
+ }
 
-                String thisItemPath = file.getAbsolutePath();
-                // Проверяем: если музыка играет, и путь трека начинается с пути этой папки
-                if (currentPlayingPath != null && currentPlayingPath.startsWith(thisItemPath + File.separator)) {
-                    textView.setTextColor(android.graphics.Color.GREEN); // Красим папку в зеленый
-                } else {
-                    textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView);
-                }
-            }
-        }
-    } catch (Exception e) {
-        // Полная защита от сбоев
-    }
+ String thisItemPath = file.getAbsolutePath();
+
+ if (file.isDirectory()) {
+ // --- ЛОГИКА ДЛЯ ПАПКИ ---
+ if (currentPlayingPath != null && currentPlayingPath.startsWith(thisItemPath + File.separator)) {
+ textView.setTextColor(android.graphics.Color.GREEN); // Красим активную папку в зеленый
+ } else {
+ textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView);
+ }
+ } else {
+ // --- ВОЗВРАЩАЕМ ФИЧУ ДЛЯ ТРЕКА ---
+ // Если это файл и его путь один в один совпадает с играющей песней
+ if (currentPlayingPath != null && currentPlayingPath.equals(thisItemPath)) {
+ textView.setTextColor(android.graphics.Color.GREEN); // Красим текущий файл в зеленый!
+ } else {
+ textView.setTextAppearance(mActivity, android.R.style.TextAppearance_Widget_TextView); // Защита от залипания при скролле
+ }
+ }
+ }
+ } catch (Exception e) {
+ // Полная защита от сбоев
+ }
+
    		return row;
 	}
 
