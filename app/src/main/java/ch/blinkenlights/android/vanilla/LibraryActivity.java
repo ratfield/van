@@ -1016,15 +1016,23 @@ public void onPause()
 			mBottomBarControls.setSong(null);
 	}
 
-	@Override
+		@Override
 	protected void onSongChange(Song song)
 	{
 		super.onSongChange(song);
-
 		mBottomBarControls.setSong(song);
 		if (song != null) {
 			mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_COVER, song));
 			mPagerAdapter.onSongChange(song);
+			
+			// НАШ КОД: Реактивный «пинок» ленивого интерфейса при смене трека
+			try {
+				if (mPagerAdapter != null) {
+					mPagerAdapter.invalidateData();
+				}
+			} catch (Exception e) {
+				// Защита от сбоев UI потока
+			}
 		}
 	}
 
