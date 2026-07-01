@@ -171,18 +171,35 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
 			row = (DraggableRow)convertView;
 			holder = (ViewHolder)row.getTag();
 		}
-		final File file = mFiles[pos];
-		String title = file.getName();
-		holder.id = pos;
-		holder.title = title;
-		if (file.isDirectory() && !pointsToParentFolder(file)) {
-			String durationStr = getFolderDurationString(file);
-			if (durationStr != null) {
-				title = title + " (" + durationStr + ")";
-			}
+		// СТАЛО (НАШ КАСТОМНЫЙ КОД):
+final File file = mFiles[pos];
+String title = file.getName();
+holder.id = pos;
+holder.title = title;
+
+if (file.isDirectory()) {
+	// Логика для папок: считаем общее время
+	if (!pointsToParentFolder(file)) {
+		String durationStr = getFolderDurationString(file);
+		if (durationStr != null) {
+			title = title + " (" + durationStr + ")";
 		}
-		
-		row.setText(title);
+	}
+} else {
+	// Логика для треков: убираем расширение (например, .mp3)
+	int lastDot = title.lastIndexOf('.');
+	if (lastDot > 0) {
+		title = title.substring(0, lastDot);
+	}
+	
+	// Реактивно подтягиваем длительность конкретного трека из MediaStore
+	String trackDurationStr = getTrackDurationString(file);
+	if (trackDurationStr != null) {
+		title = title + " (" + trackDurationStr + ")";
+	}
+}
+
+row.setText(title);
 
 		if (file.isDirectory() && !file.getName().equals("..")) {
 			final String folderPath = file.getAbsolutePath();
@@ -427,7 +444,44 @@ public class FileSystemAdapter extends SortableAdapter implements LibraryAdapter
 				result = String.format("%02d:%02d", minutes, seconds);
 			}
 		}
-		mFolderCache.put(folderPath, result);
+				mFolderCache.put(folderPath, result);
 		return result;
+	}
+
+	// НАШ НОВЫЙ МЕТОД ВСТАВЛЯЕМ СЮДА:
+	private String getTrackDurationString(File file) {
+		if (file == null || file.isDirectory()) return null;
+		String filePath = file.getAbsolutePath();
+		long durationMs = 0;
+		android.database.Cursor cursor = null;
+		try {
+			android.net.Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+			String[] projection = { android.provider.MediaStore.Audio.Media.DURATION };
+			String selection = android.provider.MediaStore.Audio.Media.DATA + " = ?";
+			String[] selectionArgs = { filePath };
+			cursor = mActivity.getContentResolver().query(uri, projection, selection, selectionArgs, null);
+			if (cursor != null && cursor.moveToFirst()) {
+				durationMs = cursor.getLong(0);
+			}
+		} catch (Exception e) {
+			android.util.Log.e("VanillaMusic", "Ошибка запроса времени трека", e);
+		} finally {
+			if (cursor != null) {
+				try { cursor.close(); } catch (Exception e) {}
+			}
+		}
+		
+		if (durationMs > 0) {
+			long seconds = durationMs / 1000;
+			long hours = seconds / 3600;
+			long minutes = (seconds % 3600) / 60;
+			seconds = seconds % 60;
+			if (hours > 0) {
+				return String.format("%d:%02d:%02d", hours, minutes, seconds);
+			} else {
+				return String.format("%02d:%02d", minutes, seconds);
+			}
+		}
+		return null;
 	}
 }
